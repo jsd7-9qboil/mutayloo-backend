@@ -16,12 +16,13 @@ const port = process.env.PORT || 5555; // Default to 5555 if PORT is not defined
 // Middleware
 app.use(cors());
 app.use(express.json());
+
 // Uncomment the line below if you want to apply auth middleware globally
-// app.use(authMiddleware);
+app.use(authMiddleware);
 
 // Routes
 app.use("/api", userRoutes);
 
 app.listen(port, () => {
-  console.log(`Server is running on port: ${port}`);
+  console.log(`Server is running on port: ${port} 🍀`);
 });
