@@ -28,5 +28,5 @@ app.use("/api", userRoutes);
 app.use("/api", productRoutes);
 
 app.listen(port, () => {
-  console.log(`Server is running on port: ${port} 🍀`);
+	console.log(`Server is running on port: ${port} 🍀`);
 });
