@@ -18,11 +18,11 @@ app.use(cors());
 app.use(express.json());
 
 // Uncomment the line below if you want to apply auth middleware globally
-app.use(authMiddleware);
+//app.use(authMiddleware);
 
 // Routes
 app.use("/api", userRoutes);
 
 app.listen(port, () => {
-  console.log(`Server is running on port: ${port} 🍀`);
+	console.log(`Server is running on port: ${port} 🍀`);
 });
