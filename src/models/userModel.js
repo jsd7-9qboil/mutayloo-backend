@@ -20,7 +20,8 @@ const userSchema = new mongoose.Schema(
 			required: true,
 		},
 		dob: {
-			type: String,
+			type: Date,
+			required: true,
 		},
 		imgProfile: {
 			type: String,
@@ -36,6 +37,3 @@ const userSchema = new mongoose.Schema(
 const User = mongoose.model("User", userSchema);
 
 export default User;
-//date
-//img
-//isAdmin
