@@ -2,31 +2,35 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
-//import { authMiddleware } from "./middleware/authMiddleware.js";
-
-// routes
+// import middleware
+import errorMiddleware from "./middleware/errorMiddleware.js";
+// import routes
 import userRoutes from "./routes/userRoutes.js";
+import addressRoutes from "./routes/addressRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 
 dotenv.config();
-
-// Connect to the database
 connectDB();
 
+const PORT = process.env.PORT || 5555;
 const app = express();
-const port = process.env.PORT || 5555; // Default to 5555 if PORT is not defined in .env
 
-// Middleware
-app.use(cors());
+app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-// Uncomment the line below if you want to apply auth middleware globally
-// app.use(authMiddleware);
+// use routes
+app.get("/", (req, res) => {
+  res.json({ data: "respond received from the server!" });
+});
 
-// Routes
-app.use("/api", userRoutes);
-app.use("/api", productRoutes);
+app.use("/users", userRoutes);
+app.use("/addresses", addressRoutes);
+app.use("/products", productRoutes);
 
-app.listen(port, () => {
-	console.log(`Server is running on port: ${port} 🍀`);
+// error handling middleware
+app.use(errorMiddleware);
+
+// start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT} 🍀`);
 });

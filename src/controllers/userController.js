@@ -1,84 +1,77 @@
 import User from "../models/userModel.js";
-import Address from "../models/addressModel.js";
+import jwt from "jsonwebtoken";
 
-// Get all users with their addresses
-export const getUsers = async (req, res) => {
-	try {
-		const users = await User.aggregate([
-			{
-				$lookup: {
-					from: "addresses",
-					localField: "_id",
-					foreignField: "customer_id",
-					as: "addresses",
-				},
-			},
-		]);
-		res.status(200).json(users);
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
+//TODO specifically admin can register admin role, other user can not!!!
+
+export const registerUser = async (req, res) => {
+  try {
+    const { fname, lname, email, password, dob, isAdmin } = req.body;
+
+    const user = new User({ fname, lname, email, password, dob, isAdmin });
+    await user.save();
+
+    const token = jwt.sign(
+      { _id: user._id, email: user.email, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET
+    );
+
+    res.status(201).json({ token });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
-// Get user by ID
-export const getUserById = async (req, res, next) => {
-	try {
-		const { id } = req.params;
-		const user = await User.findById(id);
-		if (!user) {
-			return res.status(404).json({ message: `User with id ${id} not found` });
-		}
-		res.status(200).json({ message: "Get User By ID", data: user });
-	} catch (error) {
-		next(error);
-	}
+export const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
+
+    const token = jwt.sign(
+      { _id: user._id, email: user.email, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET
+    );
+
+    res.json({ token });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };
 
-// Create a new user
-export const createUser = async (req, res) => {
-	try {
-		const user = new User(req.body);
-		await user.save();
-		res.status(201).json(user);
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    res.json(user);
+  } catch (error) {
+    res.status(404).json({ message: "User not found." });
+  }
 };
 
-// Update profile
-export const editProfile = async (req, res, next) => {
-	try {
-		const { id } = req.params;
-		const { fname, lname, email, password } = req.body;
+export const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
 
-		const updatedUser = await User.findByIdAndUpdate(
-			id,
-			{ fname, lname, email, password },
-			{ new: true, runValidators: true }
-		);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
 
-		if (!updatedUser) {
-			return res.status(404).json({ message: "User not found" });
-		}
+    const { fname, lname, email, password, dob, imgProfile } = req.body;
 
-		res.status(200).json(updatedUser);
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
-};
+    // Update fields
+    if (fname) user.fname = fname;
+    if (lname) user.lname = lname;
+    if (email) user.email = email;
+    if (password) user.password = password;
+    if (dob) user.dob = dob;
+    if (imgProfile) user.imgProfile = imgProfile;
 
-// Delete User
-export const deleteUser = async (req, res, next) => {
-	try {
-		const { id } = req.params;
-		const deletedUser = await User.findByIdAndDelete(id);
+    await user.save();
 
-		if (!deletedUser) {
-			return res.status(404).json({ message: `User with id ${id} not found` });
-		}
-
-		res.status(200).json({ message: `User with id ${id} has been deleted` });
-	} catch (error) {
-		res.status(400).json({ message: error.message });
-	}
+    res.json({ message: "Profile updated successfully." });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
 };

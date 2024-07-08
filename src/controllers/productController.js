@@ -1,12 +1,34 @@
 import Product from "../models/productModel.js";
-import Review from "../models/reviewModel.js";
 
 // Create a new product
 export const createProduct = async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const {
+      sku,
+      name,
+      desc,
+      color,
+      price,
+      category,
+      power,
+      qty_instock,
+      image,
+    } = req.body;
+
+    const product = new Product({
+      sku,
+      name,
+      desc,
+      color,
+      price,
+      category,
+      power,
+      qty_instock,
+      image,
+    });
+
     await product.save();
-    res.status(201).json(product);
+    res.status(201).json({ message: "Product created successfully.", product });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -16,7 +38,7 @@ export const createProduct = async (req, res) => {
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    res.status(200).json(products);
+    res.json(products);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -26,32 +48,12 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
+
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found." });
     }
-    res.status(200).json(product);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
 
-// Search products
-export const searchProducts = async (req, res) => {
-  try {
-    const searchTerm = req.query.q;
-    const products = await Product.find({ $text: { $search: searchTerm } });
-    res.status(200).json(products);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// Filter products
-export const filterProducts = async (req, res) => {
-  try {
-    const filterTerm = req.query.category;
-    const products = await Product.find({ category: filterTerm });
-    res.status(200).json(products);
+    res.json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -60,14 +62,36 @@ export const filterProducts = async (req, res) => {
 // Update a product by ID
 export const updateProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const product = await Product.findById(req.params.id);
+
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found." });
     }
-    res.status(200).json(product);
+
+    const {
+      sku,
+      name,
+      desc,
+      color,
+      price,
+      category,
+      power,
+      qty_instock,
+      image,
+    } = req.body;
+
+    if (sku) product.sku = sku;
+    if (name) product.name = name;
+    if (desc) product.desc = desc;
+    if (color) product.color = color;
+    if (price) product.price = price;
+    if (category) product.category = category;
+    if (power) product.power = power;
+    if (qty_instock) product.qty_instock = qty_instock;
+    if (image) product.image = image;
+
+    await product.save();
+    res.json({ message: "Product updated successfully.", product });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -76,32 +100,14 @@ export const updateProduct = async (req, res) => {
 // Delete a product by ID
 export const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
+
     if (!product) {
-      return res.status(404).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found." });
     }
-    res.status(200).json({ message: "Product deleted successfully" });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
 
-// Get all reviews for a product
-export const getReviewsForProduct = async (req, res) => {
-  try {
-    const reviews = await Review.find({ productId: req.params.id });
-    res.status(200).json(reviews);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-// Create a review for a product
-export const createReviewForProduct = async (req, res) => {
-  try {
-    const review = new Review({ ...req.body, productId: req.params.id });
-    await review.save();
-    res.status(201).json(review);
+    await product.remove();
+    res.json({ message: "Product deleted successfully." });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
