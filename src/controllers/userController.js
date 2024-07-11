@@ -1,9 +1,34 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 
-//TODO specifically admin can register admin role, other user can not!!!
-
+// Customer register a new user
 export const registerUser = async (req, res) => {
+  try {
+    const { fname, lname, email, password, dob } = req.body;
+
+    const user = new User({
+      fname,
+      lname,
+      email,
+      password,
+      dob,
+      isAdmin: false,
+    });
+    await user.save();
+
+    const token = jwt.sign(
+      { _id: user._id, email: user.email, isAdmin: user.isAdmin },
+      process.env.JWT_SECRET
+    );
+
+    res.status(201).json({ token });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Admin can register every role
+export const adminRegister = async (req, res) => {
   try {
     const { fname, lname, email, password, dob, isAdmin } = req.body;
 
@@ -21,6 +46,7 @@ export const registerUser = async (req, res) => {
   }
 };
 
+// Login a user
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -41,15 +67,37 @@ export const loginUser = async (req, res) => {
   }
 };
 
+// Get user profile
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-password");
-    res.json(user);
+    const userProfile = await User.aggregate([
+      { $match: { _id: req.user._id } },
+      {
+        $lookup: {
+          from: "addresses",
+          localField: "_id",
+          foreignField: "customer_id",
+          as: "address",
+        },
+      },
+      {
+        $project: {
+          password: 0,
+        },
+      },
+    ]);
+
+    if (!userProfile || userProfile.length === 0) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.json(userProfile[0]); // Return the first result as the user profile
   } catch (error) {
-    res.status(404).json({ message: "User not found." });
+    res.status(404).json({ message: error.message });
   }
 };
 
+// Update user profile
 export const updateUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);

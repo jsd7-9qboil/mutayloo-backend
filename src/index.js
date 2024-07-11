@@ -8,6 +8,8 @@ import errorMiddleware from "./middleware/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import addressRoutes from "./routes/addressRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import cartRoutes from "./routes/cartRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
 
 dotenv.config();
 connectDB();
@@ -26,6 +28,8 @@ app.get("/", (req, res) => {
 app.use("/users", userRoutes);
 app.use("/addresses", addressRoutes);
 app.use("/products", productRoutes);
+app.use("/cart", cartRoutes);
+app.use("/orders", orderRoutes);
 
 // error handling middleware
 app.use(errorMiddleware);
