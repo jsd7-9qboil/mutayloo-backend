@@ -16,7 +16,7 @@ const router = express.Router();
 router.get("/", getProducts); // Get all products
 router.get("/:id", getProductById); // Get a single product by ID
 router.post("/create", authMiddleware, adminMiddleware, createProduct); // Create a new product
-router.patch("/updeate/:id", authMiddleware, adminMiddleware, updateProduct); // Update a product
+router.patch("/update/:id", authMiddleware, adminMiddleware, updateProduct); // Update a product
 router.delete("/delete/:id", authMiddleware, adminMiddleware, deleteProduct); // Delete a product
 
 export default router;

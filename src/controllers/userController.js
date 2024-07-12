@@ -1,16 +1,19 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 // Customer register a new user
 export const registerUser = async (req, res) => {
   try {
     const { fname, lname, email, password, dob } = req.body;
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = new User({
       fname,
       lname,
       email,
-      password,
+      password: hashedPassword,
       dob,
       isAdmin: false,
     });
@@ -32,7 +35,16 @@ export const adminRegister = async (req, res) => {
   try {
     const { fname, lname, email, password, dob, isAdmin } = req.body;
 
-    const user = new User({ fname, lname, email, password, dob, isAdmin });
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new User({
+      fname,
+      lname,
+      email,
+      password: hashedPassword,
+      dob,
+      isAdmin,
+    });
     await user.save();
 
     const token = jwt.sign(
@@ -52,7 +64,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
 
-    if (!user || user.password !== password) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
@@ -61,7 +73,7 @@ export const loginUser = async (req, res) => {
       process.env.JWT_SECRET
     );
 
-    res.json({ token });
+    res.json({ token, user });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -112,7 +124,7 @@ export const updateUserProfile = async (req, res) => {
     if (fname) user.fname = fname;
     if (lname) user.lname = lname;
     if (email) user.email = email;
-    if (password) user.password = password;
+    if (password) user.password = await bcrypt.hash(password, 10);
     if (dob) user.dob = dob;
     if (imgProfile) user.imgProfile = imgProfile;
 
