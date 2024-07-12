@@ -109,6 +109,19 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+// Get a single user by ID
+export const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 // Get all users
 export const getAllUsers = async (req, res) => {
   try {
@@ -118,7 +131,6 @@ export const getAllUsers = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
 
 // Update user profile
 export const updateUserProfile = async (req, res) => {
@@ -142,6 +154,31 @@ export const updateUserProfile = async (req, res) => {
     await user.save();
 
     res.json({ message: "Profile updated successfully." });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Update a single user by ID
+export const updateUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    const { fname, lname, email, password, dob, imgProfile } = req.body;
+
+    // Update fields
+    if (fname) user.fname = fname;
+    if (lname) user.lname = lname;
+    if (email) user.email = email;
+    if (password) user.password = await bcrypt.hash(password, 10);
+    if (dob) user.dob = dob;
+    if (imgProfile) user.imgProfile = imgProfile;
+
+    await user.save();
+    res.json({ message: "User updated successfully." });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
