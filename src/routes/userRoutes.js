@@ -4,6 +4,7 @@ import {
   adminRegister,
   loginUser,
   getUserProfile,
+  getAllUsers,
   updateUserProfile,
 } from "../controllers/userController.js";
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -15,6 +16,8 @@ router.post("/register", registerUser); // Customer register a new user
 router.post("/adminRegister", authMiddleware, adminMiddleware, adminRegister);  // Admin can register every role
 router.post("/login", loginUser); // Login a user
 router.get("/profile", authMiddleware, getUserProfile); // Get own profile
+router.get("/all", authMiddleware, adminMiddleware, getAllUsers); // Get all users
+
 router.patch("/profile", authMiddleware, updateUserProfile); // Update own profile
 
 export default router;
