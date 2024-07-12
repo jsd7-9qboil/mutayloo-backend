@@ -19,7 +19,7 @@ router.post("/adminRegister", authMiddleware, adminMiddleware, adminRegister);  
 router.post("/login", loginUser); // Login a user
 
 router.get("/profile", authMiddleware, getUserProfile); // Get own profile
-router.get("/profile/:id", authMiddleware, getUserById); // Get a single user by ID
+router.get("/profile/:id", authMiddleware, adminMiddleware, getUserById); // Get a single user by ID
 router.get("/all", authMiddleware, adminMiddleware, getAllUsers); // Get all users
 
 router.patch("/profile", authMiddleware, updateUserProfile); // Update own profile
