@@ -1,6 +1,9 @@
 import User from "../models/userModel.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { PassThrough } from "stream";
+import { cloudinary } from "../config/cloudinaryConfig.js";
+import { promisify } from "util";
 
 // Customer register a new user
 export const registerUser = async (req, res) => {
@@ -132,55 +135,7 @@ export const getAllUsers = async (req, res) => {
 	}
 };
 
-export const updateUserProfile = async (req, res) => {
-	try {
-		const user = await User.findById(req.user._id);
-
-		if (!user) {
-			return res.status(404).json({ message: "User not found." });
-		}
-
-		const { fname, lname, email, password, newPassword, dob, imgProfile } =
-			req.body;
-
-		// Update non-sensitive fields
-		if (fname) user.fname = fname;
-		if (lname) user.lname = lname;
-		if (email) user.email = email;
-		if (dob) user.dob = dob;
-		if (imgProfile) user.imgProfile = imgProfile;
-
-		// Handle password change
-		if (password && newPassword) {
-			const isMatch = await bcrypt.compare(password, user.password);
-			if (!isMatch) {
-				return res
-					.status(400)
-					.json({ message: "Current password is incorrect." });
-			}
-			user.password = await bcrypt.hash(newPassword, 10);
-		} else if (password || newPassword) {
-			// If only one of password or newPassword is provided, it's an error
-			return res
-				.status(400)
-				.json({
-					message:
-						"Both current and new password are required to change password.",
-				});
-		}
-
-		await user.save();
-
-		res.json({ message: "Profile updated successfully." });
-	} catch (error) {
-		console.error("Error updating user profile:", error);
-		res
-			.status(400)
-			.json({ message: "An error occurred while updating the profile." });
-	}
-};
-
-// Update a single user by ID
+// Update user by ID
 export const updateUserById = async (req, res) => {
 	try {
 		const user = await User.findById(req.params.id);
@@ -202,5 +157,65 @@ export const updateUserById = async (req, res) => {
 		res.json({ message: "User updated successfully." });
 	} catch (error) {
 		res.status(400).json({ message: error.message });
+	}
+};
+
+// Update user profile (with image upload)
+
+// Promisify the Cloudinary upload_stream function
+const cloudinaryUpload = promisify((buffer, options, cb) => {
+	const bufferStream = new PassThrough();
+	bufferStream.end(buffer);
+	bufferStream.pipe(cloudinary.uploader.upload_stream(options, cb));
+});
+
+export const updateUserProfile = async (req, res) => {
+	try {
+		if (!req.user || !req.user._id) {
+			return res.status(401).json({ message: "Unauthorized" });
+		}
+
+		const user = await User.findById(req.user._id);
+		if (!user) {
+			return res.status(404).json({ message: "User not found" });
+		}
+
+		// Update general information
+		const { fname, lname, email } = req.body;
+		if (fname) user.fname = fname;
+		if (lname) user.lname = lname;
+		if (email) user.email = email;
+
+		// Update profile image if provided
+		if (req.file) {
+			try {
+				const result = await cloudinaryUpload(req.file.buffer, {
+					folder: "profile_pictures",
+				});
+				user.imgProfile = result.secure_url;
+			} catch (uploadError) {
+				console.error("Cloudinary upload error:", uploadError);
+				return res
+					.status(500)
+					.json({ message: "Error uploading to Cloudinary" });
+			}
+		}
+
+		// Save the user
+		const updatedUser = await user.save();
+
+		res.json({
+			message: "Profile updated successfully",
+			user: {
+				_id: updatedUser._id,
+				fname: updatedUser.fname,
+				lname: updatedUser.lname,
+				email: updatedUser.email,
+				imgProfile: updatedUser.imgProfile,
+			},
+		});
+	} catch (error) {
+		console.error("Error in updateUserProfile:", error);
+		res.status(500).json({ message: error.message });
 	}
 };
