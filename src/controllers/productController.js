@@ -15,6 +15,20 @@ export const createProduct = async (req, res) => {
       image,
     } = req.body;
 
+    if (
+      !sku ||
+      !name ||
+      !desc ||
+      !color ||
+      !price ||
+      !category ||
+      !power ||
+      !qty_instock ||
+      !image
+    ) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
     const product = new Product({
       sku,
       name,
@@ -34,10 +48,21 @@ export const createProduct = async (req, res) => {
   }
 };
 
-// Get all products
+// Get all products or filter by power
 export const getProducts = async (req, res) => {
   try {
-    const products = await Product.find();
+    const power = req.query.power;
+    let products;
+    if (power) {
+      products = await Product.find({ power: power });
+    } else {
+      products = await Product.find();
+    }
+
+    if (products.length === 0) {
+      return res.status(404).json({ message: "No products found." });
+    }
+
     res.json(products);
   } catch (error) {
     res.status(400).json({ message: error.message });

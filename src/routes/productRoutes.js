@@ -13,7 +13,7 @@ import adminMiddleware from "../middleware/adminMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getProducts); // Get all products
+router.get("/", getProducts); // Get all products or filter by power
 router.get("/:id", getProductById); // Get a single product by ID
 router.post("/create", authMiddleware, adminMiddleware, createProduct); // Create a new product
 router.patch("/update/:id", authMiddleware, adminMiddleware, updateProduct); // Update a product
