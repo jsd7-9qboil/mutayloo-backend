@@ -1,63 +1,27 @@
 import Order from "../models/orderModel.js";
-import Cart from "../models/cartModel.js";
 
 // Create an order
 export const createOrder = async (req, res) => {
-  const { items } = req.body; // รับรายการสินค้าที่ต้องการสั่งซื้อจากคำขอ
+  const { shippingAddress, products, total, paymentMethod, status } = req.body;
 
   try {
-    const cart = await Cart.findOne({ user: req.user._id }).populate(
-      "cartItems.product"
-    );
-
-    if (!cart) {
-      return res.status(404).json({ message: "Cart not found." });
-    }
-
-    // คัดกรองรายการสินค้าที่ต้องการสั่งซื้อจากตะกร้า
-    const orderItems = cart.cartItems
-      .filter((cartItem) =>
-        items.some(
-          (item) => item.product.toString() === cartItem.product._id.toString()
-        )
-      )
-      .map((cartItem) => ({
-        product: cartItem.product._id,
-        quantity: items.find(
-          (item) => item.product.toString() === cartItem.product._id.toString()
-        ).quantity,
-        price: cartItem.product.price, // เพิ่มการดึงข้อมูลราคา
-      }));
-
-    if (orderItems.length === 0) {
-      return res.status(400).json({ message: "No valid items to order." });
-    }
-
-    const totalAmount = orderItems.reduce(
-      (acc, item) => acc + item.price * item.quantity,
-      0
-    );
+    const orderItems = products.map((product) => ({
+      product: product._id,
+      quantity: product.quantity,
+      price: product.product.price, // Assuming price is a property of product
+    }));
 
     const order = new Order({
       user: req.user._id,
       items: orderItems,
-      totalAmount,
+      totalAmount: total,
+      status,
     });
 
     await order.save();
-
-    // ลบรายการสินค้าที่ถูกสั่งซื้อออกจากตะกร้า
-    cart.cartItems = cart.cartItems.filter(
-      (cartItem) =>
-        !items.some(
-          (item) => item.product.toString() === cartItem.product._id.toString()
-        )
-    );
-
-    await cart.save();
-
     res.status(201).json({ message: "Order created successfully.", order });
   } catch (error) {
+    console.error("Error creating order:", error);
     res.status(400).json({ message: error.message });
   }
 };
@@ -68,8 +32,20 @@ export const getUserOrders = async (req, res) => {
     const orders = await Order.find({ user: req.user._id }).populate(
       "items.product"
     );
-
     res.status(200).json(orders);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Get order by ID
+export const getOrderById = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id).populate("items.product");
+    if (!order) {
+      return res.status(404).json({ message: "Order not found." });
+    }
+    res.status(200).json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
